@@ -1,6 +1,6 @@
 (ns toothpick.core
-  (:import (java.io [File FileOutputStream])
-           (java.nio [ByteBuffer ByteOrder])))
+  (:import (java.io File FileOutputStream)
+           (java.nio ByteBuffer ByteOrder)))
 
 (defn exp [b n]
   (reduce * 1 (repeat n b)))
@@ -23,10 +23,26 @@
                     (bit-and value (bit-mask-n bits))))
           0 (map vector layout args)))
 
-(defmacro define-register [name code width]
-  `(def ^{:width ~width :tag 'Register}
-     ~(symbol name) ~code))
+(defmacro define-architecture [name & forms]
+  `(def ~name (-> {} ~@forms)))
 
+(defn reg
+  ([m i s w]
+     (let [sym (symbol s)]
+       (eval `(def ~sym ~s))
+       (assoc-in m [:registers sym]
+                 {:name sym
+                  :code i
+                  :width w})))
+  ([m i sym] 
+     (reg m i sym 32)))
 
-; code
-;; Code emitters are defined to functions or macros which yield a map {:prefix (list words) :val word :postfix (list words)}
+(defn op
+  ([m i s fmt & docs]
+     (let [sym (symbol s)]
+       (eval `(defn ~sym [& args#] (apply vector ~s args#)))
+       (assoc-in m [:opcodes sym]
+                 {:name sym
+                  :code i
+                  :fmt fmt
+                  :docs (apply str docs)}))))
