@@ -1,11 +1,17 @@
 (ns toothpick.dcpu16
-  (:require [toothpick.core :refer :all]))
+  (:require [toothpick.core :refer [define-architecture
+                                    op reg bit-fmt
+                                    assemble-label
+                                    assemble-align
+                                    assemble-padding]]))
 
 ;; An assembler for Notch's fictional DCPU16 as documented here:
 ;;     http://dcpu.com/dcpu-16/
+
 ;; define architectural registers
 
 (def dopfmt [6 5 5])
+
 
 (define-architecture dcpu16
   ;; general purpose regist ers...
@@ -113,3 +119,89 @@
 
   (op 0x1f "STD" dopfmt
       "sets b to a, then decreases I and J by 1"))
+
+
+(defn BRACKET
+  ([register const]
+     (-> register
+         (assoc :deref true)
+         (assoc :offset const)))
+  ([register]
+     (BRACKET register 0)))
+
+
+(defn CONST [value]
+  {:type :constant
+   :value value})
+
+
+;; DCPU specific assembler implementation
+;;------------------------------------------------------------------------------
+;;------------------------------------------------------------------------------
+;; Major components are borrowed from core, but all architecture specific word
+;; generation is defined here because in the general case there isn't a common
+;; abstraction to work with.
+
+(defn assemble-register [state register]
+  ;; Returns a list of one or more elements, the first of which is the inline
+  ;; operand, and the possible second of which is a trailing word.
+  (let [v (-> (get-in dcpu16 [(:key register)
+                              (:value register)
+                              :value])
+              (bit-or (if (:deref register) 0x08 0x0))
+              (bit-or (if (:offset register) 0x10 0x0)))]
+    (if (:offset register)
+      (list v (:offset register))
+      (list v))))
+
+
+(defn assemble-constant [state const]
+  (list 0x1F (:value const)))
+
+
+(defn assemble-param [state param]
+  (case (:type param)
+    (:register) (assemble-register state param)
+    (:label)    (assemble-constant state
+                                   {:type :constant
+                                    :value (get-in state
+                                                   [:labels (:value param)])})
+    (:constant) (assemble-constant state param)))
+
+
+(defn assemble-opcode [state form]
+  (let [args (:params form)
+        args (map (partial assemble-param state) args)
+        words (mapcat rest args)
+        args (map first args)]
+    (concat (list (apply bit-fmt
+                         (get-in dcpu16 [(:key form)
+                                         (:value form)
+                                         :fmt])
+                         (get-in dcpu16 [(:key form)
+                                         (:value form)
+                                         :code])
+                         args))
+            words)))
+
+
+(defn assemble-label [state label])
+
+
+(defn assemble-form [state form]
+  ((case (:type form)
+     :opcode    assemble-opcode
+     :label     assemble-label
+     :alignment assemble-align
+     :pad       assemble-padding)
+   state form))
+
+
+(defn assemble [& forms]
+  (first
+   (reduce
+    (fn [[words state] form]
+      (let [[state new-words] (assemble-form state form)]
+        (list state
+              (concat words new-words))))
+    [(list) {}] forms)))
