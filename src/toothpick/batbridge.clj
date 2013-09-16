@@ -86,85 +86,91 @@
    :srcb  (register-symbol-map (word->srcb word))
    :lit   (word->lit word)})
 
-(defmacro defopcode 
+(defmacro opcode 
   "A grand utility macro for quickly defining the reader and assembler
   for some opcode. This macro generates two function definitions, one
   of which encodes its arguments into an instruction word after
   verifying that the arguments match their given constraints." 
-  [icode code fmt-args]
+  [system icode code fmt-args]
   (let [pred-args (filter symbol? fmt-args)
         fmt-args  (map #(if (symbol? %1) 
                           (gensym) %1) fmt-args)
         syms      (filter symbol? fmt-args)
         nice-name (lower-case (name icode))]
-    `(do (defn ~(symbol (str "assemble-" nice-name))
-           ~(apply vector syms)
-           ~@(map (fn [x y] `(do (assert (~x ~y))))
-                  pred-args
-                  syms)
-           (bit-fmt common-layout ~code ~@fmt-args))
-         (defn ~(symbol (str "read-" nice-name))
-           [word#]
-           (when (= ~code (word->opcode word#))
-             (-> word#
-                 (decode-args)
-                 (assoc :opcode ~(keyword nice-name))))))))
+    `(let [assemble# (defn ~(symbol (str "assemble-" nice-name))
+                       ~(apply vector syms)
+                       ~@(map (fn [x y] `(do (assert (~x ~y))))
+                              pred-args
+                              syms)
+                       (bit-fmt common-layout ~code ~@fmt-args))
+           read#     (defn ~(symbol (str "read-" nice-name))
+                       [word#]
+                       (when (= ~code (word->opcode word#))
+                         (-> word#
+                             (decode-args)
+                             (assoc :opcode ~(keyword nice-name)))))]
+       (-> ~system
+           (assoc-in [:assemble ~nice-name] assemble#)
+           (assoc-in [:read ~code] read#)))))
 
+(def batbridge
+  (-> {:word 32}
 ;-------------------------------------------------------------------------------
 ;; HLT 0x00   000000 _____ _____ _____ ___________
-(defopcode htl 0x00 [0 0 0 0])
+      (opcode htl 0x00 [0 0 0 0])
 
 ;; LD  0x10   010000 ttttt aaaaa xxxxx iiiiiiiiiii
-(defopcode ld 0x10 [register? register? register? number?])
+      (opcode ld 0x10 [register? register? register? integer?])
 
 ;; ST  0x11   010001 sssss aaaaa xxxxx iiiiiiiiiii
-(defopcode st 0x11 [register? register? register? number?])
-
+      (opcode st 0x11 [register? register? register? integer?])
+ 
 ;; IFLT 0x20  100000 _____ aaaaa bbbbb iiiiiiiiiii
-(defopcode iflt 0x20 [0 register? register? number?])
+      (opcode iflt 0x20 [0 register? register? integer?])
 
 ;; IFLE 0x21  100001 _____ aaaaa bbbbb iiiiiiiiiii
-(defopcode ifle 0x21 [0 register? register? number?])
+      (opcode ifle 0x21 [0 register? register? integer?])
 
 ;; IFEQ 0x22  100010 _____ aaaaa bbbbb iiiiiiiiiii
-(defopcode ifeq 0x22 [0 register? register? number?])
+      (opcode ifeq 0x22 [0 register? register? integer?])
 
 ;; IFNE 0x23  100013 _____ aaaaa bbbbb iiiiiiiiiii
-(defopcode ifne 0x21 [0 register? register? number?])
+      (opcode ifne 0x21 [0 register? register? integer?])
 
 ;; ADD  0x30  110000 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode add 0x30 [register? register? register? number?])
+      (opcode add 0x30 [register? register? register? integer?])
 
 ;; SUB  0x31  110001 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode sub 0x31 [register? register? register? number?])
+      (opcode sub 0x31 [register? register? register? integer?])
 
 ;; DIV  0x32  110010 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode div 0x32 [register? register? register? number?])
+      (opcode div 0x32 [register? register? register? integer?])
 
 ;; MOD  0x33  110011 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode mod 0x33 [register? register? register? number?])
+      (opcode mod 0x33 [register? register? register? integer?])
 
 ;; MUL  0x34  110100 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode mul 0x34 [register? register? register? number?])
+      (opcode mul 0x34 [register? register? register? integer?])
 
 ;; AND  0x35  110101 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode and 0x35 [register? register? register? number?])
+      (opcode and 0x35 [register? register? register? integer?])
 
 ;; OR   0x36  110110 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode or 0x36 [register? register? register? number?])
+      (opcode or 0x36 [register? register? register? integer?])
 
 ;; NAND 0x37  110111 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode nand 0x37 [register? register? register? number?])
+      (opcode nand 0x37 [register? register? register? integer?])
 
 ;; XOR  0x38  111000 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode xor 0x38 [register? register? register? number?])
+      (opcode xor 0x38 [register? register? register? integer?])
 
 ;; SL   0x3a  111010 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode sl 0x3a [register? register? register? number?])
+      (opcode sl 0x3a [register? register? register? integer?])
 
 ;; SAR  0x3b  111011 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode sar 0x3b [register? register? register? number?])
+      (opcode sar 0x3b [register? register? register? integer?])
 
 ;; SLR  0x3c  111100 ttttt aaaaa bbbbb iiiiiiiiiii
-(defopcode slr 0x3c [register? register? register? number?])
-
+      (opcode slr 0x3c [register? register? register? integer?])
+      )
+  )
