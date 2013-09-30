@@ -1,7 +1,6 @@
 (ns toothpick.batbridge
   (:require [clojure.string :refer [lower-case]]
-            [toothpick.core :refer [bit-fmt]]
-            [multiarrow :refer [-<n>]]))
+            [toothpick.core :refer [bit-fmt]]))
 
 ; hex digit: literal value
 ;; t : target register
