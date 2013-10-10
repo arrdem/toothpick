@@ -1,6 +1,6 @@
 (ns toothpick.batbridge
   (:require [clojure.string :refer [lower-case]]
-            [toothpick.core :refer [bit-fmt]]))
+            [toothpick.core :refer [bit-fmt bit-mask-n]]))
 
 ; hex digit: literal value
 ;; t : target register
@@ -43,9 +43,6 @@
 
 ; Opcode decoding & encoding helpers
 ;-------------------------------------------------------------------------------
-(def common-layout
-  [7 5 5 5 11])
-
 (defn word->opcode
   "Pulls the opcode bits out of a word"
   [word]
@@ -79,42 +76,6 @@
   [word]
   (bit-and word 0x7ff))
 
-(defn decode-args 
-  "Disassembles a word into its' stock members"
-  [word]
-  {:dst   (register-symbol-map (word->dst word))
-   :srca  (register-symbol-map (word->srca word))
-   :srcb  (register-symbol-map (word->srcb word))
-   :lit   (word->lit word)})
-
-(defmacro opcode 
-  "A grand utility macro for quickly defining the reader and assembler
-   for some opcode. This macro generates two function definitions, one
-   of which encodes its arguments into an instruction word after
-   verifying that the arguments match their given constraints."
-
-  [system icode code fmt-args]
-  (let [pred-args (filter symbol? fmt-args)
-        fmt-args  (map #(if (symbol? %1) 
-                          (gensym) %1) fmt-args)
-        syms      (filter symbol? fmt-args)
-        nice-name (lower-case (name icode))]
-    `(let [assemble# (defn ~(symbol (str "assemble-" nice-name))
-                       ~(apply vector syms)
-                       ~@(map (fn [x y] `(do (assert (~x ~y))))
-                              pred-args
-                              syms)
-                       (bit-fmt common-layout ~code ~@fmt-args))
-           read#     (defn ~(symbol (str "read-" nice-name))
-                       [word#]
-                       (when (= ~code (word->opcode word#))
-                         (-> word#
-                             (decode-args)
-                             (assoc :opcode ~(keyword nice-name)))))]
-       (-> ~system
-           (assoc-in [:assemble ~nice-name] assemble#)
-           (assoc-in [:read ~code] read#)))))
-
 ;; Idea: 
 ;;
 ;;    This is a new notation idea that totally struck me the night of
@@ -129,8 +90,7 @@
 ;;    symbolic name as well as the type of each opcode field. One
 ;;    possible notation is
 ;;
-;;    (opcode htl ;; symbol
-;;            32  ;; width or widths list
+;;    (opcode htl 32
 ;;            (const-field :icode 6  0x00)
 ;;            (const-field :dst   5  0x00)
 ;;            (const-field :srca  5  0x00)
@@ -155,73 +115,145 @@
 ;;    notation naturally handles it because the decoder is generated
 ;;    on a per instruction basis and is "fully aware" of the user's
 ;;    desired notation.
-;;
-;; Note:
-;;
-;;    It's probably a bad thing to allow one instruction to have
-;;    multiple encoding lengths... the better approach is to providez
+
+
+;; subsystem for constructing icode descriptors
+;;------------------------------------------------------------------------------
+(defn const-field [sym width const]
+  {:name  sym
+   :type  :const
+   :width width
+   :value const
+   :pred  #(= %1 const)})
+
+(defn parameter-field [sym width pred]
+  {:name  sym
+   :type  :field
+   :width width
+   :pred  pred})
+
+(defn add-field [icode field-map]
+  (let [field-map (assoc field-map :offset 
+                         (->> icode
+                              :fields
+                              (map :width)
+                              (reduce +)))]
+    (-> icode
+        (update-in [:fields] conj field-map))))
+
+(defn opcode [isa sym & fields]
+  (let [opcode-repr (reduce add-field 
+                            {} fields)]
+    (assoc-in isa [:icodes (keyword (name sym))] opcode-repr)))
+
+
+;; subsystem for using icode descriptors to assemble code
+;;------------------------------------------------------------------------------
+(defn encode-field [icode field val]
+  (when ((:pred field) val)
+    (bit-shift-left (bit-and (bit-mask-n (:width field))
+                              val)
+                     (:offset field))))
+
+(defn list->bytecode 
+  "Compiles a list that a programmer could actually type or generate
+  by hand into an assembled word."
+
+  [isa opcode & tail]
+  (let [icode (get (:icodes isa) 
+                   opcode)
+        fields (reverse (:fields icode))
+        encoding (map (partial encode-field icode)
+                      fields
+                      tail)]
+    (println encoding)
+
+    (reduce bit-or
+            0 encoding)))
+
+(defn map->bytecode 
+  "Compiles a map which the disassembler would produce into a word."
+  [isa opcode map]
+  )
+
+;; subsystem for using icode interpreters to disassemble code
+;; ------------------------------------------------------------------------------
+;; Basically this is going to be a parser from a single binary word to
+;; the internal representation of an attr map
+
+
+(defmacro bb-opcode [thread name code]
+  `(opcode ~thread ~name
+           (const-field :icode 6 ~code)
+           (parameter-field :dst 5 register?)
+           (parameter-field :srca 5 register?)
+           (parameter-field :srcb 5 register?)
+           (parameter-field :const 11 integer?)))
 
 (def batbridge
   (-> {:word 32}
 ;-------------------------------------------------------------------------------
 ;; HLT 0x00   000000 _____ _____ _____ ___________
-      (opcode htl 0x00 [0 0 0 0])
+      (opcode :htl
+              (const-field :icode 6 0)
+              (const-field :dst   5 0)
+              (const-field :srca  5 0)
+              (const-field :srcb  5 0)
+              (const-field :lit   11 0))
 
 ;; LD  0x10   010000 ttttt aaaaa xxxxx iiiiiiiiiii
-      (opcode ld 0x10 [register? register? register? integer?])
+      (bb-opcode :ld 0x10)
 
 ;; ST  0x11   010001 sssss aaaaa xxxxx iiiiiiiiiii
-      (opcode st 0x11 [register? register? register? integer?])
+      (bb-opcode :st 0x11)
  
 ;; IFLT 0x20  100000 _____ aaaaa bbbbb iiiiiiiiiii
-      (opcode iflt 0x20 [0 register? register? integer?])
+      (bb-opcode :iflt 0x20)
 
 ;; IFLE 0x21  100001 _____ aaaaa bbbbb iiiiiiiiiii
-      (opcode ifle 0x21 [0 register? register? integer?])
+      (bb-opcode :ifle 0x21)
 
 ;; IFEQ 0x22  100010 _____ aaaaa bbbbb iiiiiiiiiii
-      (opcode ifeq 0x22 [0 register? register? integer?])
+      (bb-opcode :ifeq 0x22)
 
 ;; IFNE 0x23  100013 _____ aaaaa bbbbb iiiiiiiiiii
-      (opcode ifne 0x21 [0 register? register? integer?])
+      (bb-opcode :ifne 0x21)
 
 ;; ADD  0x30  110000 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode add 0x30 [register? register? register? integer?])
+      (bb-opcode :add 0x30)
 
 ;; SUB  0x31  110001 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode sub 0x31 [register? register? register? integer?])
+      (bb-opcode :sub 0x31)
 
 ;; DIV  0x32  110010 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode div 0x32 [register? register? register? integer?])
+      (bb-opcode :div 0x32)
 
 ;; MOD  0x33  110011 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode mod 0x33 [register? register? register? integer?])
+      (bb-opcode :mod 0x33)
 
 ;; MUL  0x34  110100 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode mul 0x34 [register? register? register? integer?])
+      (bb-opcode :mul 0x34)
 
 ;; AND  0x35  110101 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode and 0x35 [register? register? register? integer?])
+      (bb-opcode :and 0x35)
 
 ;; OR   0x36  110110 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode or 0x36 [register? register? register? integer?])
+      (bb-opcode :or 0x36)
 
 ;; NAND 0x37  110111 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode nand 0x37 [register? register? register? integer?])
+      (bb-opcode :nand 0x37)
 
 ;; XOR  0x38  111000 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode xor 0x38 [register? register? register? integer?])
+      (bb-opcode :xor 0x38)
 
 ;; SL   0x3a  111010 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode sl 0x3a [register? register? register? integer?])
+      (bb-opcode :sl 0x3a)
 
 ;; SAR  0x3b  111011 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode sar 0x3b [register? register? register? integer?])
+      (bb-opcode :sar 0x3b)
 
 ;; SLR  0x3c  111100 ttttt aaaaa bbbbb iiiiiiiiiii
-      (opcode slr 0x3c [register? register? register? integer?])
-      )
-  )
+      (bb-opcode :slr 0x3c)))
 
 
 ;--------------------------------------------------------------------------------
