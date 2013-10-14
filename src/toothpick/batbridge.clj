@@ -106,8 +106,8 @@
 
       ;; LD  0x10   010000 ttttt aaaaa xxxxx iiiiiiiiiii
       ;; loads the word (+ a (* 4 x)) to register dst
-      (opcode :st 
-              (const-field     :icode 6  0x11)
+      (opcode :ld 
+              (const-field     :icode 6  0x10)
               (parameter-field :dst   5  register?)
               (parameter-field :a     5  register?)
               (parameter-field :x     5  register?)
@@ -115,7 +115,7 @@
 
       ;; ST  0x11   010001 sssss aaaaa xxxxx iiiiiiiiiii
       ;; stores the word in register src to (+ a (* 4 x))
-      (opcode :st 
+      (opcode :st
               (const-field     :icode 6  0x11)
               (parameter-field :src   5  register?)
               (parameter-field :a     5  register?)
