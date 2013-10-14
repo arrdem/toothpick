@@ -97,12 +97,12 @@
 (define-architecture batbridge
       ;; HLT 0x00   000000 _____ _____ _____ ___________
       ;; halts the machine immediately
-      (opcode :htl
+      (opcode :hlt
               (const-field :icode 6  0)
-              (const-field :dst   5  0)
-              (const-field :srca  5  0)
-              (const-field :srcb  5  0)
-              (const-field :lit   11 0))
+              (const-field :_0    5  0)
+              (const-field :_1    5  0)
+              (const-field :_2    5  0)
+              (const-field :_3    11 0))
 
       ;; LD  0x10   010000 ttttt aaaaa xxxxx iiiiiiiiiii
       ;; loads the word (+ a (* 4 x)) to register dst
@@ -205,6 +205,3 @@
       ;; SLR  0x3c  111100 ttttt aaaaa bbbbb iiiiiiiiiii
       ;; stores the shift of a b bits to t
       (bb-opcode :slr 0x3c))
-
-         
-  
