@@ -124,19 +124,39 @@
  
       ;; IFLT 0x20  100000 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (< a b)
-      (bb-opcode :iflt 0x20)
+      (opcode :iflt
+              (const-field     :icode 6  0x20)
+              (const-field     :_     5  0)
+              (parameter-field :a     5  register?)
+              (parameter-field :b     5  register?)
+              (parameter-field :const 11 integer?))
       
       ;; IFLE 0x21  100001 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (<= a b)
-      (bb-opcode :ifle 0x21)
+      (opcode :ifle
+              (const-field     :icode 6  0x21)
+              (const-field     :_     5  0)
+              (parameter-field :a     5  register?)
+              (parameter-field :b     5  register?)
+              (parameter-field :const 11 integer?))
       
       ;; IFEQ 0x22  100010 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (= a b)
-      (bb-opcode :ifeq 0x22)
+      (opcode :ifeq
+              (const-field     :icode 6  0x22)
+              (const-field     :_     5  0)
+              (parameter-field :a     5  register?)
+              (parameter-field :b     5  register?)
+              (parameter-field :const 11 integer?))
       
       ;; IFNE 0x23  100013 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (!= a b)
-      (bb-opcode :ifne 0x21)
+      (opcode :ifne
+              (const-field     :icode 6  0x23)
+              (const-field     :_     5  0)
+              (parameter-field :a     5  register?)
+              (parameter-field :b     5  register?)
+              (parameter-field :const 11 integer?))
       
       ;; ADD  0x30  110000 ttttt aaaaa bbbbb iiiiiiiiiii
       ;; stores (+ a b) to t
