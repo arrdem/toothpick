@@ -36,12 +36,11 @@ status. `dangerous` would probably be a more apt description.
    fixed length instructions and will be bounded by code size.
  - `toothpick.assembler` must be suitable for wrapping with macros so
    that snippet definiton and compositon is reasonable.
- - `toothpick.batbridge` should become `toothpick.isa.batbridge`.
- - `toothpick.dcpu16` should become `toothpick.isa.dcpu16`, and should
-   be finished in terms of `toothpick.assembler`. This will probably
-   involve some crazy stuff to take care of the fact that the dcpu16
-   spec allows _every instruction_ to span 1, 2 or 3 words thanks to
-   the `next word` operand.
+ - `toothpick.isa.dcpu16` should be finished in terms of
+   `toothpick.assembler`. This will probably involve some crazy stuff
+   to take care of the fact that the dcpu16 spec allows _every
+   instruction_ to span 1, 2 or 3 words thanks to the `next word`
+   operand.
 
 ## Usage
 
