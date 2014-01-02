@@ -28,7 +28,13 @@
    :pred  pred})
 
 
-(defn add-field [icode field-map]
+(defn n+
+  "A wrapper around + which treats nil as having a value of 0."
+
+  [& more]
+  (reduce +
+          (map #(or %1 0)
+               more)))
   (let [field-map (assoc field-map :offset 
                          (->> icode
                               :fields
