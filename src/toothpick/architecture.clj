@@ -41,61 +41,15 @@
                              conj (:name field-map)))))
 
 
-(defn opcode [isa sym & fields]
-  (let [opcode-repr (reduce add-field 
-                            {} fields)]
+(defn opcode
+  "Creates an opcode representation by composing several parameter
+  field specifiers onto a single map. These field specifiers, provided
+  in the fields parameter, are ordered from highest bit to lowest. Sym
+  is the symbolic name of the opcode being defined. Isa is the
+  instruction set architecture into which the final compiled opcode
+  representation is to be installed. Returns an updated ISA."
+
+  [isa sym & fields]
+  (let [fields (reverse fields)
+        opcode-repr (reduce add-field {} fields)]
     (assoc-in isa [:icodes (keyword (name sym))] opcode-repr)))
-
-
-;; subsystem for using icode descriptors to assemble code
-;;------------------------------------------------------------------------------
-(defn encode-field 
-  "Encodes an instruction field, using the field descriptor map and a
-  map of parameter names to values."
-
-  [icode field val-map]
-  (case (:type field)
-    ;; case for encoding a constant field... Note that this does _not_
-    ;; make an effort to get a parameter from the parameters map,
-    ;; because its a constant!
-    (:const)
-      (bit-shift-left 
-       (bit-and (bit-mask-n (:width field))
-                (:value field))
-       (:offset field))
-
-    ;; Because this case is a parameter that has to be encoded in, a
-    ;; parameter is fetched from the params map.
-    (:field)
-      (let [val (get val-map (:name field) 0)]
-        (when ((:pred field) val)
-          (bit-shift-left 
-           (bit-and (bit-mask-n (:width field))
-                    val)
-           (:offset field))))))
-
-
-(defn map->bytecode 
-  "Compiles a map which the disassembler would produce into a word."
-
-  [isa opcode val-map]
-  (let [icode (get (:icodes isa) opcode)
-        fields (reverse (:fields icode))
-        encoding (map #(encode-field icode %1 val-map)
-                      fields)]
-    (println (map #(format "0x%X" %1)
-                  encoding))
-    (reduce bit-or
-            0 encoding)))
-
-
-(defn list->bytecode
-  "Compiles a list that a programmer could actually type or generate
-  by hand into an assembled word."
-
-  [isa opcode & tail]
-  (let [icode (get (:icodes isa) 
-                   opcode)
-        fields (reverse (:fields icode))
-        val-map (zipmap fields tail)]
-    (map->bytecode isa opcode val-map)))
