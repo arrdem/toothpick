@@ -38,9 +38,9 @@
 
 
 (defn add-field 
-  "Adds a bit field to an opcode. Bit fields are specified with a
-  name, a type, a width, an optional test predicate and an optional
-  value. Bit fields are packed atop previously installed fields."
+  "Adds a bit field to an opcode. Bit fields are specified with a name, a type,
+  a width, an optional test predicate and an optional value. Bit fields are
+  packed atop previously installed fields."
 
   [icode field-map]
   (let [field-map (assoc field-map :offset 
@@ -57,12 +57,12 @@
 
 
 (defn opcode
-  "Creates an opcode representation by composing several parameter
-  field specifiers onto a single map. These field specifiers, provided
-  in the fields parameter, are ordered from highest bit to lowest. Sym
-  is the symbolic name of the opcode being defined. Isa is the
-  instruction set architecture into which the final compiled opcode
-  representation is to be installed. Returns an updated ISA."
+  "Creates an opcode representation by composing several parameter field
+  specifiers onto a single map. These field specifiers, provided in the fields
+  parameter, are ordered from highest bit to lowest. Sym is the symbolic name of
+  the opcode being defined. Isa is the instruction set architecture into which
+  the final compiled opcode representation is to be installed. Returns an
+  updated ISA."
 
   [isa sym & fields]
   (let [fields (reverse fields)
