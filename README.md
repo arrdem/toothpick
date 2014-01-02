@@ -27,21 +27,10 @@ status. `dangerous` would probably be a more apt description.
    instruction set.
  - `toothpick.architecture` ISAs provide the information needed to
    build an `(instruction, params)` pair to raw bytes.
-
-**TODO List**
-
- - `toothpick.assembler` needs to be able to do label & relative jump
-   computation. This involves inventing a DSL for writing assembler in
-   Clojure, the implementing it. This will probably wind up relying on
-   fixed length instructions and will be bounded by code size.
- - `toothpick.assembler` must be suitable for wrapping with macros so
-   that snippet definiton and compositon is reasonable.
- - `toothpick.isa.dcpu16` should be finished in terms of
-   `toothpick.assembler`. This will probably involve some crazy stuff
-   to take care of the fact that the dcpu16 spec allows _every
-   instruction_ to span 1, 2 or 3 words thanks to the `next word`
-   operand.
-
+ - `toothpick.isa.batbridge` provides a full definition of the
+   BatBridge instruction set used as the target of my blog post series
+   on processor design and implementation.
+ - 
 ## Usage
 
 ```Clojure
