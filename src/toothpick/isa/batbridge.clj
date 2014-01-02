@@ -1,4 +1,4 @@
-(ns toothpick.batbridge
+(ns toothpick.isa.batbridge
   (:require [toothpick.architecture :refer :all]))
 
 
