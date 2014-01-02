@@ -35,12 +35,21 @@
   (reduce +
           (map #(or %1 0)
                more)))
+
+
+(defn add-field 
+  "Adds a bit field to an opcode. Bit fields are specified with a
+  name, a type, a width, an optional test predicate and an optional
+  value. Bit fields are packed atop previously installed fields."
+
+  [icode field-map]
   (let [field-map (assoc field-map :offset 
                          (->> icode
                               :fields
                               (map :width)
                               (reduce +)))]
     (-> icode
+        (update-in [:width]  n+ (:width field-map))
         (update-in [:fields] conj field-map)
         (update-in-only-when [:params] 
                              (fn [_] (= :field (:type field-map)))
