@@ -34,46 +34,6 @@
       (assoc 29 :r_IMM)))
 
 
-; Opcode decoding & encoding helpers
-;-------------------------------------------------------------------------------
-(defn word->opcode
-  "Pulls the opcode bits out of a word"
-  [word]
-  (-> word
-      (bit-shift-right 26)
-      (bit-and 0x3f)))
-
-
-(defn word->dst 
-  "Pulls the destination bits out of a word"
-  [word]
-  (-> word
-      (bit-shift-right 21)
-      (bit-and 0x1f)))
-
-
-(defn word->srca 
-  "Pulls the source A bits out of a word"
-  [word]
-  (-> word
-      (bit-shift-right 16)
-      (bit-and 0x1f)))
-
-
-(defn word->srcb 
-  "Pulls the source B bits out of a word"
-  [word]
-  (-> word
-      (bit-shift-right 11)
-      (bit-and 0x1f)))
-
-
-(defn word->lit 
-  "Pulls the literal bits out of a word"
-  [word]
-  (bit-and word 0x7ff))
-
-
 ; Define the BatBridge instruction set
 ;-------------------------------------------------------------------------------
 
@@ -198,10 +158,14 @@
       ;; stores (bit-shift-left a b) to t
       (bb-opcode :sl 0x3a)
       
-      ;; SAR  0x3b  111011 ttttt aaaaa bbbbb iiiiiiiiiii
-      ;; stores the arithmatic right shift of a, b bits to t
-      (bb-opcode :sar 0x3b)
+      ;; SR  0x3b  111011 ttttt aaaaa bbbbb iiiiiiiiiii
+      ;; stores the right shift of a, b bits to t
+      (bb-opcode :sr 0x3b)
       
-      ;; SLR  0x3c  111100 ttttt aaaaa bbbbb iiiiiiiiiii
-      ;; stores the shift of a b bits to t
-      (bb-opcode :slr 0x3c))
+      ;; SAL  0x3c 111100 ttttt aaaaa bbbbb iiiiiiiiiii
+      ;; stores the arithmatic shift left of a b bits to t
+      (bb-opcode :sal 0x3c)
+
+      ;; SAR  0x3d 111101 ttttt aaaaa bbbbb iiiiiiiiiii
+      ;; stores the arithmatic right shift of a by b bits to t
+      (bb-opcode :sar 0x3d))
