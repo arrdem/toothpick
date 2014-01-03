@@ -18,11 +18,12 @@ target architecture for Toothpick.
 
 ## Status
 
-Toothpick is nearing an `0.1.0` state, as the assembler itself is almost feature
-complete and Toothpick has successfully build and run code on bytecode enabled
-Batbridge simulators. The `0.1.0` release will become a dependency of the
-batbridge project and will be used in the test suite thereof for program
-compilation.
+![][https://clojars.org/me.arrdem/toothpick/latest-version.svg]
+
+Toothpick has reached a `0.1.0` state, as the assembler itself is
+feature complete and Toothpick has successfully build and run code on
+bytecode enabled Batbridge simulators. Batbridge now uses Toothpick as
+an assembler backend for its test suite.
 
 Soon to come is a JVM bytecode module, followed by some subset of Intel
 x86_64. These will be paired with matching simulators and tools for running the
@@ -33,8 +34,17 @@ bytecode on "bare metal" so it may be some time.
  - `toothpick.architecture` provides a sane and probably stable
    interface for defining the instructions which constitute an
    instruction set.
+   
  - `toothpick.architecture` ISAs provide the information needed to
-   build an `(instruction, params)` pair to raw bytes.
+   build structured instruction representations into raw bytes
+   executable by hardware or bytecode simulators.
+
+ - `toothpick.assembler` provides a full label based assembler as
+   demonstrated below. At present however there is no good assembler
+   support for compiling data segments or other common
+   structures. There is also no support for variable length
+   instruction encodings. These are both on the TODO list.
+   
  - `toothpick.isa.batbridge` provides a full definition of the
    Batbridge instruction set used as the target of my blog post series
    on processor design and implementation.
