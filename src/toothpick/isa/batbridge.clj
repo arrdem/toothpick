@@ -40,10 +40,10 @@
 (defmacro bb-opcode [thread name code]
   `(opcode ~thread ~name
            (const-field :icode 6 ~code)
-           (parameter-field :dst 5 register?)
-           (parameter-field :srca 5 register?)
-           (parameter-field :srcb 5 register?)
-           (parameter-field :const 11 integer?)))
+           (parameter-field :d 5 register?)
+           (parameter-field :a 5 register?)
+           (parameter-field :b 5 register?)
+           (signed-parameter-field :i 11 integer?)))
 
 ; hex digit: literal value
 ;; t : target register
@@ -68,19 +68,19 @@
       ;; loads the word (+ a (* 4 x)) to register dst
       (opcode :ld 
               (const-field     :icode 6  0x10)
-              (parameter-field :dst   5  register?)
+              (parameter-field :d     5  register?)
               (parameter-field :a     5  register?)
               (parameter-field :x     5  register?)
-              (parameter-field :const 11 integer?))
+              (signed-parameter-field :i 11 integer?))
 
       ;; ST  0x11   010001 sssss aaaaa xxxxx iiiiiiiiiii
       ;; stores the word in register src to (+ a (* 4 x))
       (opcode :st
               (const-field     :icode 6  0x11)
-              (parameter-field :src   5  register?)
+              (parameter-field :s     5  register?)
               (parameter-field :a     5  register?)
               (parameter-field :x     5  register?)
-              (parameter-field :const 11 integer?))
+              (signed-parameter-field :i 11 integer?))
  
       ;; IFLT 0x20  100000 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (< a b)
@@ -89,7 +89,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :const 11 integer?))
+              (parameter-field :i     11 integer?))
       
       ;; IFLE 0x21  100001 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (<= a b)
@@ -98,7 +98,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :const 11 integer?))
+              (parameter-field :i     11 integer?))
       
       ;; IFEQ 0x22  100010 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (= a b)
@@ -107,7 +107,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :const 11 integer?))
+              (parameter-field :i     11 integer?))
       
       ;; IFNE 0x23  100013 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (!= a b)
@@ -116,7 +116,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :const 11 integer?))
+              (parameter-field :i     11 integer?))
       
       ;; ADD  0x30  110000 ttttt aaaaa bbbbb iiiiiiiiiii
       ;; stores (+ a b) to t
