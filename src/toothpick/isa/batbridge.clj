@@ -8,6 +8,11 @@
        (>= x 0)))
 
 
+(defn literal? [i]
+  (and (< i 1024)
+       (>= i -1024)))
+
+
 ; Registers
 ;-------------------------------------------------------------------------------
 ;; The PC 31 (0b11111)
@@ -24,6 +29,7 @@
 ;;   - when read produces the 11 bit immediate field in the instruction
 ;;   - writing to it prints its value on the console (HEX)
 (def r_IMM 29)
+
 
 (def register-symbol-map
   (-> (reduce (fn [m v]
@@ -43,7 +49,7 @@
            (parameter-field :d 5 register?)
            (parameter-field :a 5 register?)
            (parameter-field :b 5 register?)
-           (signed-parameter-field :i 11 integer?)))
+           (signed-parameter-field :i 11 literal?)))
 
 ; hex digit: literal value
 ;; t : target register
@@ -71,7 +77,7 @@
               (parameter-field :d     5  register?)
               (parameter-field :a     5  register?)
               (parameter-field :x     5  register?)
-              (signed-parameter-field :i 11 integer?))
+              (signed-parameter-field :i 11 literal?))
 
       ;; ST  0x11   010001 sssss aaaaa xxxxx iiiiiiiiiii
       ;; stores the word in register src to (+ a (* 4 x))
@@ -80,7 +86,7 @@
               (parameter-field :s     5  register?)
               (parameter-field :a     5  register?)
               (parameter-field :x     5  register?)
-              (signed-parameter-field :i 11 integer?))
+              (signed-parameter-field :i 11 literal?))
  
       ;; IFLT 0x20  100000 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (< a b)
@@ -89,7 +95,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :i     11 integer?))
+              (parameter-field :i     11 literal?))
       
       ;; IFLE 0x21  100001 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (<= a b)
@@ -98,7 +104,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :i     11 integer?))
+              (parameter-field :i     11 literal?))
       
       ;; IFEQ 0x22  100010 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (= a b)
@@ -107,7 +113,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :i     11 integer?))
+              (parameter-field :i     11 literal?))
       
       ;; IFNE 0x23  100013 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (!= a b)
@@ -116,7 +122,7 @@
               (const-field     :_     5  0)
               (parameter-field :a     5  register?)
               (parameter-field :b     5  register?)
-              (parameter-field :i     11 integer?))
+              (parameter-field :i     11 literal?))
       
       ;; ADD  0x30  110000 ttttt aaaaa bbbbb iiiiiiiiiii
       ;; stores (+ a b) to t
