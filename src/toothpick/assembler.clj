@@ -22,14 +22,25 @@
 
     ;; Because this case is a parameter that has to be encoded in, a
     ;; parameter is fetched from the params map.
-    (:field)
+    (:unsigned-field)
       (let [val (get val-map (:name field) 0)]
         (assert ((:pred field) val)
                 (format "Failed to encode parameter %s" (name (:name field))))
         (bit-shift-left
          (bit-and (bit-mask-n (:width field))
                   val)
+         (:offset field)))
+
+    ;; And the signed field case
+    (:signed-field)
+      (let [val (get val-map (:name field) 0)]
+        (assert ((:pred field) val)
+                (format "Failed to encode parameter %s" (name (:name field))))
+        (bit-shift-left
+         (bit-or (bit-and (bit-mask-n (dec (:width field))) val)
+                 (bit-shift-left (if (< 0 val) 1 0) (:width field)))
          (:offset field)))))
+    
 
 
 (defn map->bytecode
