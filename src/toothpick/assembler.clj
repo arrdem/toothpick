@@ -53,25 +53,26 @@
   "Compiles a list that a programmer could actually type or generate
   into an assembled word."
 
-  [isa [opcode & tail]]
-  (let [opcode (get-in isa [:icodes opcode])]
+  [isa [name & tail]]
+  (let [opcode (get-in isa [:icodes name])]
     (assert opcode (format "Failed to find opcode in isa: %s" opcode))
-    (let [{:keys [fields params] :as icode} 
+    (let [{:keys [fields params] :as icode} opcode
           val-map (zipmap params tail)]
-      (map->bytecode isa opcode val-map))))
+      (map->bytecode isa name val-map))))
 
 
-;; Define a prototype assembler
-;; from here on down is all totally broken and shouldn't be used. yet.
+;; Define a prototype assembler.
 ;;------------------------------------------------------------------------------
 (defn label? [form]
   (or (and (list? form)
-           (= (first form) 'label)
+           (= (first form) :label)
            (keyword? (second form)))
       (keyword? form)))
 
 
-(defn label-symbol [form]
+(defn label-symbol 
+
+  [form]
   (when (label? form)
     (cond (list? form)
             (second form)
@@ -83,7 +84,9 @@
   4)
 
 
-(defn compute-labels [start forms]
+(defn compute-labels 
+  
+  [start forms]
   (loop [label-addr-map {}
          address start
          forms forms]
@@ -99,17 +102,29 @@
           label-addr-map)))))
 
 
-(defn resolve-param [label-map param]
+(defn resolve-param
+  "Assumes that all explicit parameters are integers and that keywords are
+  labels. Looks up keywords in the argument translation table and returns either
+  the translation or the existing parameter. Assertion fails if the keyword is
+  not found."
+
+  [label-map param]
   (if (label? param)
-    (get label-map (label-symbol param))
+    (do (assert (contains? label-map param) 
+                (format "Label %s undefined!" param))
+        (get label-map (label-symbol param)))
     param))
 
 
-(defn assemble-form [isa label-map form]
-  (let [[op & params] form
-        fun (get-in isa [:assemble (name op)])
-        params (map (partial resolve-param label-map) params)]
-    (apply fun params)))
+(defn resolve-params 
+  "Resolves the parameters of an opcode, being the _tail_ of the opcode. The
+  head element is ignored and assumed to be an instruction keyword. Returns a
+  new sequence representing the resolved opcode."
+
+  [label-map icode]
+  (let [op (first icode)
+        more (rest icode)]
+    (cons op (map #(resolve-param label-map %1) more))))
 
 
 (defn assemble
@@ -118,10 +133,12 @@
   This is _not_ the final form of the assembler, only a prototype
   therefor which will be used to inform later syntax and design
   decisions."
-  [forms & {:keys [start]
-            :as options
-            :or {start 0}}]
+
+  [isa forms & {:keys [start]
+                :as   options
+                :or   {start 0}}]
   (let [label-map (compute-labels start forms)]
-    (->> forms
-         (remove label?)
-         (map (partial assemble-form label-map)))))
+    (as-> forms v
+          (remove label? v)
+          (map #(resolve-params label-map %1) v)
+          (map #(list->bytecode isa %1) v))))
