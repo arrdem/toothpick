@@ -18,7 +18,7 @@ target architecture for Toothpick.
 
 ## Status
 
-![][https://clojars.org/me.arrdem/toothpick/latest-version.svg]
+!["Leiningen version"](https://clojars.org/me.arrdem/toothpick/latest-version.svg)
 
 Toothpick has reached a `0.1.0` state, as the assembler itself is
 feature complete and Toothpick has successfully build and run code on
