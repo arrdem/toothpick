@@ -23,7 +23,14 @@
 
 (defn parameter-field [sym width pred]
   {:name  sym
-   :type  :field
+   :type  :unsigned-field
+   :width width
+   :pred  pred})
+
+
+(defn signed-parameter-field [sym width pred]
+  {:name  sym
+   :type  :signed-field
    :width width
    :pred  pred})
 
