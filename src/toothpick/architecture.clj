@@ -59,7 +59,8 @@
         (update-in [:width]  n+ (:width field-map))
         (update-in [:fields] conj field-map)
         (update-in-only-when [:params] 
-                             (fn [_] (= :field (:type field-map)))
+                             (fn [_] (#{:signed-field :unsigned-field}
+                                     (:type field-map)))
                              conj (:name field-map)))))
 
 
