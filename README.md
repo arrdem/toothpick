@@ -1,6 +1,6 @@
 # Toothpick
 
-> I was tought assembler in my second year at school,<br>
+> I was taught assembler in my second year at school,<br>
 > It's kind of like construction work<br>
 > With a toothpick, for a tool<br>
 > So when I made my senior year I threw my code away<br>
