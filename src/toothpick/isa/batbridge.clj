@@ -65,64 +65,64 @@
       ;; halts the machine immediately
       (opcode :hlt
               (const-field :icode 6  0)
-              (const-field :_0    5  0)
-              (const-field :_1    5  0)
-              (const-field :_2    5  0)
-              (const-field :_3    11 0))
+              (enforced-const-field :_0 5  0)
+              (enforced-const-field :_1 5  0)
+              (enforced-const-field :_2 5  0)
+              (enforced-const-field :_3 11 0))
 
       ;; LD  0x10   010000 ttttt aaaaa xxxxx iiiiiiiiiii
       ;; loads the word (+ a (* 4 x)) to register dst
       (opcode :ld 
-              (const-field     :icode 6  0x10)
-              (parameter-field :d     5  register?)
-              (parameter-field :a     5  register?)
-              (parameter-field :x     5  register?)
-              (signed-parameter-field :i 11 literal?))
+              (const-field            :icode 6  0x10)
+              (parameter-field        :d     5  register?)
+              (parameter-field        :a     5  register?)
+              (parameter-field        :x     5  register?)
+              (signed-parameter-field :i     11 literal?))
 
       ;; ST  0x11   010001 sssss aaaaa xxxxx iiiiiiiiiii
       ;; stores the word in register src to (+ a (* 4 x))
       (opcode :st
-              (const-field     :icode 6  0x11)
-              (parameter-field :s     5  register?)
-              (parameter-field :a     5  register?)
-              (parameter-field :x     5  register?)
-              (signed-parameter-field :i 11 literal?))
+              (const-field            :icode 6  0x11)
+              (parameter-field        :s     5  register?)
+              (parameter-field        :a     5  register?)
+              (parameter-field        :x     5  register?)
+              (signed-parameter-field :i     11 literal?))
  
       ;; IFLT 0x20  100000 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (< a b)
       (opcode :iflt
-              (const-field     :icode 6  0x20)
-              (const-field     :_     5  0)
-              (parameter-field :a     5  register?)
-              (parameter-field :b     5  register?)
-              (parameter-field :i     11 literal?))
+              (const-field            :icode 6  0x20)
+              (enforced-const-field   :_     5  0)
+              (parameter-field        :a     5  register?)
+              (parameter-field        :b     5  register?)
+              (signed-parameter-field :i     11 literal?))
       
       ;; IFLE 0x21  100001 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (<= a b)
       (opcode :ifle
-              (const-field     :icode 6  0x21)
-              (const-field     :_     5  0)
-              (parameter-field :a     5  register?)
-              (parameter-field :b     5  register?)
-              (parameter-field :i     11 literal?))
+              (const-field            :icode 6  0x21)
+              (enforced-const-field   :_     5  0)
+              (parameter-field        :a     5  register?)
+              (parameter-field        :b     5  register?)
+              (signed-parameter-field :i     11 literal?))
       
       ;; IFEQ 0x22  100010 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (= a b)
       (opcode :ifeq
-              (const-field     :icode 6  0x22)
-              (const-field     :_     5  0)
-              (parameter-field :a     5  register?)
-              (parameter-field :b     5  register?)
-              (parameter-field :i     11 literal?))
+              (const-field            :icode 6  0x22)
+              (enforced-const-field   :_     5  0)
+              (parameter-field        :a     5  register?)
+              (parameter-field        :b     5  register?)
+              (signed-parameter-field :i     11 literal?))
       
       ;; IFNE 0x23  100013 _____ aaaaa bbbbb iiiiiiiiiii
       ;; execute the next instruction IFF (!= a b)
       (opcode :ifne
-              (const-field     :icode 6  0x23)
-              (const-field     :_     5  0)
-              (parameter-field :a     5  register?)
-              (parameter-field :b     5  register?)
-              (parameter-field :i     11 literal?))
+              (const-field            :icode 6  0x23)
+              (enforced-const-field   :_     5  0)
+              (parameter-field        :a     5  register?)
+              (parameter-field        :b     5  register?)
+              (signed-parameter-field :i     11 literal?))
       
       ;; ADD  0x30  110000 ttttt aaaaa bbbbb iiiiiiiiiii
       ;; stores (+ a b) to t
