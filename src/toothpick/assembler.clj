@@ -14,7 +14,7 @@
     ;; case for encoding a constant field... Note that this does _not_
     ;; make an effort to get a parameter from the parameters map,
     ;; because its a constant!
-    (:const)
+    (:const :enforced-const)
       (bit-shift-left
        (bit-and (bit-mask-n (:width field))
                 (:value field))
