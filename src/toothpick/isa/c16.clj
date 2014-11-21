@@ -10,6 +10,10 @@
   (let [v (dec (bit-shift-left 1 5))]
     (<= (- v) x v)))
 
+(defn imm8? [x]
+  (let [v (dec (bit-shift-left 1 8))]
+    (<= (- v) x v)))
+
 (def r_ZERO 7)
 
 (def c16
