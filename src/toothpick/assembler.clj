@@ -150,7 +150,7 @@
         segments (partition words words (repeat words 0) bytecode)
         pattern  (let [bytes    (/ word-width 4)
                        x-substr (str "%0" bytes "x")]
-                   (str (apply str "%d:	" (repeat words x-substr)) \newline))
+                   (str (apply str "%d:	" (repeat words x-substr)) ";\n"))
         template (str "DEPTH = %d;\n"
                       "WIDTH = %d;\n"
                       "ADDRESS_RADIX = DEC;\n"
