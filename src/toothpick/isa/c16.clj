@@ -14,14 +14,14 @@
 
 (def c16
   (-> {}
-      (opcode "add:rri"
+      (opcode :add_rri
               (const-field :icode 0 4)
               (const-field :f     0 1)
               (parameter-field :d 3 register?)
               (parameter-field :a 3 register?)
               (signed-parameter-field :i 5 imm5?))
 
-      (opcode "add:rrr"
+      (opcode :add_rrr
               (const-field :icode 0 4)
               (const-field :f     1 1)
               (parameter-field :d 3 register?)
@@ -29,17 +29,31 @@
               (const-field :_ 2 0)
               (parameter-field :b 3 register?))
 
-      (opcode "sub:rri"
+      (opcode :sub_rri
               (const-field :icode 1 4)
               (const-field :f     0 1)
               (parameter-field :d 3 register?)
               (parameter-field :a 3 register?)
               (signed-parameter-field :i 5 imm5?))
-      
-      (opcode "sub:rrr"
+
+      (opcode :sub_rrr
               (const-field :icode 1 4)
               (const-field :f     0 1)
               (parameter-field :d 3 register?)
               (parameter-field :a 3 register?)
               (const-field :_     0 2)
-              (parameter-field :b 3 register?))))
+              (parameter-field :b 3 register?))
+
+      (opcode :brz
+              (const-field :icode 2r1111 4)
+              (const-field :f     0      1)
+              (parameter-field :d 3 register?)
+              (parameter-field :a 3 register?)
+              (parameter-field :i 5 imm5?))
+
+      (opcode :brnz
+              (const-field :icode 2r1110 4)
+              (const-field :f     0      1)
+              (parameter-field :d 3 register?)
+              (parameter-field :a 3 register?)
+              (parameter-field :i 5 imm5?))))
