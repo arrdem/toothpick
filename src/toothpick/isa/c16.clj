@@ -49,23 +49,27 @@
               (parameter-field :b 3 register?))
 
       (opcode :brz_rri
-              (const-field :icode 2r11110 5)
+              (const-field :icode 0xF 4)
+              (const-field :f     0 1)
               (parameter-field :d 3 register?)
               (parameter-field :a 3 register?)
-              (parameter-field :i 5 imm5?))
+              (signed-parameter-field :i 5 imm5?))
 
       (opcode :brz_ri
-              (const-field :icode 2r11111 5)
+              (const-field :icode 0xF 4)
+              (const-field :f     1 1)
               (parameter-field :d 3 register?)
-              (parameter-field :i 8 imm8?))
+              (signed-parameter-field :i 8 imm8?))
 
       (opcode :brnz_rri
-              (const-field :icode 2r11100 5)
+              (const-field :icode 0xE 4)
+              (const-field :f     0 1)
               (parameter-field :d 3 register?)
               (parameter-field :a 3 register?)
-              (parameter-field :i 5 imm5?))
+              (signed-parameter-field :i 5 imm5?))
 
       (opcode :brnz_ri
-              (const-field :icode 2r11101 5)
+              (const-field :icode 0xE 4)
+              (const-field :f     1 1)
               (parameter-field :d 3 register?)
-              (parameter-field :i 8 imm8?))))
+              (signed-parameter-field :i 8 imm8?))))
