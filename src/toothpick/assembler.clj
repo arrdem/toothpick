@@ -39,10 +39,10 @@
 
   [isa opcode val-map]
   (let [icode (get (:icodes isa) opcode)]
-    (assert icode 
+    (assert icode
             (format "Could not get an icode for name %s" opcode))
     (let [fields (:fields icode)]
-      (assert fields 
+      (assert fields
               (format "Could not get icode fields for icode %s"
                              (:name icode)))
       (let [encoding (mapv #(encode-field icode %1 val-map) fields)]
@@ -55,7 +55,7 @@
 
   [isa [name & tail]]
   (let [opcode (get-in isa [:icodes name])]
-    (assert opcode (format "Failed to find opcode in isa: %s" opcode))
+    (assert opcode (format "Failed to find opcode in isa: %s" name))
     (let [{:keys [fields params] :as icode} opcode
           val-map (zipmap params tail)]
       (map->bytecode isa name val-map))))
