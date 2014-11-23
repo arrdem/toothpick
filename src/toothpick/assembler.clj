@@ -63,19 +63,30 @@
 
 ;; Define a prototype assembler.
 ;;------------------------------------------------------------------------------
-(defn label? [form]
-  (or (and (list? form)
-           (= (first form) :label)
-           (keyword? (second form)))
-      (keyword? form)))
+(defn label?
+
+  [form]
+  (or  (and (or (vector? form)
+                (list? form))
+            (= (first form) :label)
+            (keyword? (second form))
+            (= 2 (count form)))
+
+       (and (or (vector? form)
+                (list? form))
+            (= (first form) :relative)
+            (keyword? (second form))
+            (= 2 (count form)))
+
+       (keyword? form)))
 
 
-(defn label-symbol 
+(defn label-symbol
 
   [form]
   (when (label? form)
     (cond (list? form)
-            (second form)
+          (second form)
           (keyword? form)
             form)))
 
@@ -84,8 +95,8 @@
   4)
 
 
-(defn compute-labels 
-  
+(defn compute-labels
+
   [start forms]
   (loop [label-addr-map {}
          address start
@@ -108,26 +119,31 @@
   the translation or the existing parameter. Assertion fails if the keyword is
   not found."
 
-  [label-map param]
+  [label-map pc param]
   (if (label? param)
-    (do (assert (contains? label-map param) 
-                (format "Label %s undefined!" param))
-        (get label-map (label-symbol param)))
+    (let [label (if (keyword? param)
+                  param
+                  (second param))]
+      (assert (contains? label-map label)
+              (format "Label %s undefined!" param))
+      (if (= :relative (first param))
+        (- (get label-map label) pc)
+        (get label-map label)))
     param))
 
 
-(defn resolve-params 
+(defn resolve-params
   "Resolves the parameters of an opcode, being the _tail_ of the opcode. The
   head element is ignored and assumed to be an instruction keyword. Returns a
   new sequence representing the resolved opcode."
 
-  [label-map icode]
+  [label-map pc icode]
   (let [op (first icode)
         more (rest icode)]
-    (cons op (map #(resolve-param label-map %1) more))))
+    (cons op (map #(resolve-param label-map pc %1) more))))
 
 
-(defn assemble
+    (defn assemble
   "Compiles a series of assembler directives into a useable bytecode,
   computing relative jumps and absolute instruction positions naively.
   This is _not_ the final form of the assembler, only a prototype
@@ -140,7 +156,7 @@
   (let [label-map (compute-labels start forms)]
     (as-> forms v
           (remove label? v)
-          (map #(resolve-params label-map %1) v)
+          (map #(resolve-params label-map %2 %1) v (drop start (range)))
           (map #(list->bytecode isa %1) v))))
 
 
