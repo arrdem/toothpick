@@ -160,25 +160,25 @@
           (map #(list->bytecode isa %1) v))))
 
 
-(defn generate-mif [isa word-width mem-width forms]
-  (let [bytecode (assemble isa forms)
-        words    (/ mem-width word-width)
-        segments (partition words words (repeat words 0) bytecode)
-        pattern  (let [bytes    (/ word-width 4)
-                       x-substr (str "%0" bytes "x")]
-                   (str (apply str "%d:	" (repeat words x-substr)) ";\n"))
-        template (str "DEPTH = %d;\n"
-                      "WIDTH = %d;\n"
-                      "ADDRESS_RADIX = DEC;\n"
-                      "DATA_RADIX = HEX;\n"
-                      "CONTENT\nBEGIN\n%sEND;")]
-    (->> segments
-         (map vector (range))
-         (map (fn [[x args]]
-                (->> args
-                     (map #(or %1 0))
-                     (apply format pattern x))))
-         (apply str)
-         (format template
-                 (inc (count segments))
-                 mem-width))))
+    (defn generate-mif [isa word-width mem-width forms]
+      (let [bytecode (assemble isa forms)
+            words    (/ mem-width word-width)
+            segments (partition words words (repeat words 0) bytecode)
+            pattern  (let [bytes    (/ word-width 4)
+                           x-substr (str "%0" bytes "x")]
+                       (str (apply str "%d:	" (repeat words x-substr)) ";\n"))
+            template (str "DEPTH = %d;\n"
+                          "WIDTH = %d;\n"
+                          "ADDRESS_RADIX = DEC;\n"
+                          "DATA_RADIX = HEX;\n"
+                          "CONTENT\nBEGIN\n%sEND;")]
+        (->> segments
+             (map vector (range))
+             (map (fn [[x args]]
+                    (->> args
+                         (map #(or %1 0))
+                         (apply format pattern x))))
+             (apply str)
+             (format template
+                     (inc (count segments))
+                     mem-width))))
