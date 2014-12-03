@@ -15,21 +15,21 @@
     ;; make an effort to get a parameter from the parameters map,
     ;; because its a constant!
     (:const :enforced-const)
-      (bit-shift-left
-       (bit-and (bit-mask-n (:width field))
-                (:value field))
-       (:offset field))
+    (bit-shift-left
+     (bit-and (bit-mask-n (:width field))
+              (:value field))
+     (:offset field))
 
     ;; Because this case is a parameter that has to be encoded in, a
     ;; parameter is fetched from the params map.
     (:unsigned-field :field :signed-field)
-      (let [val (get val-map (:name field) 0)]
-        (assert ((:pred field) val)
-                (format "Failed to encode parameter %s" (name (:name field))))
-        (bit-shift-left
-         (bit-and (bit-mask-n (:width field))
-                  val)
-         (:offset field)))))
+    (let [val (get val-map (:name field) 0)]
+      (assert ((:pred field) val)
+              (format "Failed to encode parameter %s" (name (:name field))))
+      (bit-shift-left
+       (bit-and (bit-mask-n (:width field))
+                val)
+       (:offset field)))))
 
 
 (defn map->bytecode
@@ -44,7 +44,7 @@
     (let [fields (:fields icode)]
       (assert fields
               (format "Could not get icode fields for icode %s"
-                             (:name icode)))
+                      (:name icode)))
       (let [encoding (mapv #(encode-field icode %1 val-map) fields)]
         (reduce bit-or 0 encoding)))))
 
@@ -88,7 +88,7 @@
     (cond (list? form)
           (second form)
           (keyword? form)
-            form)))
+          form)))
 
 
 (defn byte-count [form]
@@ -143,7 +143,7 @@
     (cons op (map #(resolve-param label-map pc %1) more))))
 
 
-    (defn assemble
+(defn assemble
   "Compiles a series of assembler directives into a useable bytecode,
   computing relative jumps and absolute instruction positions naively.
   This is _not_ the final form of the assembler, only a prototype
@@ -166,7 +166,7 @@
         segments (partition words words (repeat words 0) bytecode)
         pattern  (let [bytes    (/ word-width 4)
                        x-substr (str "%0" bytes "x")]
-                   (str (apply str "%d:	" (repeat words x-substr)) ";\n"))
+                   (str (apply str "%d: " (repeat words x-substr)) ";\n"))
         template (str "DEPTH = %d;\n"
                       "WIDTH = %d;\n"
                       "ADDRESS_RADIX = DEC;\n"
