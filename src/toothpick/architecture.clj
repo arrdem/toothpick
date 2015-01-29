@@ -1,5 +1,6 @@
 (ns toothpick.architecture
-  (:require [toothpick.core :refer [bit-fmt bit-mask-n]]))
+  (:require [toothpick.core :refer [bit-fmt bit-mask-n]]
+            [detritus.variants :refer [defvariant]]))
 
 (defn update-in-only-when [map path pred f & args]
   (if (pred map)
@@ -11,29 +12,37 @@
 
 ;; subsystem for constructing icode descriptors
 ;;------------------------------------------------------------------------------
-(defn const-field [sym width const]
-  {:name  sym
-   :type  :const
-   :width width
-   :value const})
+(defvariant const-field
+  "Represents a constant field in a single opcode. While it is named via `sym',
+  the value of this field cannot be set by a user and will be ignored if present
+  in a values map."
+  [sym width const])
 
-(defn enforced-const-field [sym width const]
-  {:name  sym
-   :type  :enforced-const
-   :width width
-   :value const})
+(defvariant enforced-const-field
+  "DEPRECATED, use const-field instead.
 
-(defn parameter-field [sym width pred]
-  {:name  sym
-   :type  :unsigned-field
-   :width width
-   :pred  pred})
+  Represents a constant field in a single opcode. While it is named via `sym', the
+  value of this field cannot be set by a user and will be ignored if present in
+  a values map."  {:deprecated true}
+  [sym width const])
 
-(defn signed-parameter-field [sym width pred]
-  {:name  sym
-   :type  :signed-field
-   :width width
-   :pred  pred})
+(defvariant unsigned-param-field
+  "Represents an unsigned parameter field in a single opcode. The `sym' of the
+  parameter will be used to extract a value from the arguments map when bit
+  encoding this parameter.
+
+  The value must satisfy `pred' (which should check for truncation and soforth)
+  in order for encoding to succeed."
+  [sym width pred])
+
+(defvariant signed-param-field
+  "Represents a signed parameter field in a single opcode. The `sym' of the
+  parameter will be used to extract a value from the arguments map when bit
+  encoding this parameter.
+
+  The value must satisfy `pred' (which should check for truncation and soforth)
+  in order for encoding to succeed."
+  [sym width pred])
 
 (def n+
   "A wrapper around + which treats nil as having a value of 0."
