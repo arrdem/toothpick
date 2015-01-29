@@ -1,16 +1,13 @@
 (ns toothpick.architecture
   (:require [toothpick.core :refer [bit-fmt bit-mask-n]]))
 
-
 (defn update-in-only-when [map path pred f & args]
   (if (pred map)
     (apply update-in map path f args)
     map))
 
-
 (defmacro define-architecture [name & forms]
   `(def ~name (-> {} ~@forms)))
-
 
 ;; subsystem for constructing icode descriptors
 ;;------------------------------------------------------------------------------
@@ -39,7 +36,6 @@
    :width width
    :pred  pred})
 
-
 (defn n+
   "A wrapper around + which treats nil as having a value of 0."
 
@@ -67,7 +63,6 @@
                              (fn [_] (#{:signed-field :unsigned-field :enforced-const}
                                      (:type field-map)))
                              conj (:name field-map)))))
-
 
 (defn opcode
   "Creates an opcode representation by composing several parameter field
