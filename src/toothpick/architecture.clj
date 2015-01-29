@@ -36,14 +36,9 @@
    :width width
    :pred  pred})
 
-(defn n+
+(def n+
   "A wrapper around + which treats nil as having a value of 0."
-
-  [& more]
-  (reduce +
-          (map #(or %1 0)
-               more)))
-
+  (fnil + 0))
 
 (defn add-field 
   "Adds a bit field to an opcode. Bit fields are specified with a name, a type,
