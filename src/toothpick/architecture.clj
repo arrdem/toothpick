@@ -45,6 +45,14 @@
   in order for encoding to succeed."
   [sym width pred])
 
+(defn icode-field? [x]
+  (and (vector? x)
+       (#{::signed-param-field
+          ::unsigned-param-field
+          ::const-field
+          ::enforced-const-field}
+        (first x))))
+
 (def n+
   "A wrapper around + which treats nil as having a value of 0."
   (fnil + 0))
@@ -63,12 +71,7 @@
     (-> icode
         (update-in [:width]  n+ (:width field-map))
         (update-in [:fields] conj field-map)
-        (update-in-only-when [:params] 
-                             (fn [_] (#{::signed-param-field
-                                        ::unsigned-param-field
-                                        ::const-field
-                                        ::enforced-const-field}
-                                      (first field-map)))
+        (update-in-only-when [:params] icode-field?
                              conj (:name field-map)))))
 
 (defn opcode
