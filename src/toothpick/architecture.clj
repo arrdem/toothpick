@@ -29,7 +29,6 @@
    :width width
    :pred  pred})
 
-
 (defn signed-parameter-field [sym width pred]
   {:name  sym
    :type  :signed-field
