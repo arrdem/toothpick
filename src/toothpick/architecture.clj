@@ -64,8 +64,11 @@
         (update-in [:width]  n+ (:width field-map))
         (update-in [:fields] conj field-map)
         (update-in-only-when [:params] 
-                             (fn [_] (#{:signed-field :unsigned-field :enforced-const}
-                                     (:type field-map)))
+                             (fn [_] (#{::signed-param-field
+                                        ::unsigned-param-field
+                                        ::const-field
+                                        ::enforced-const-field}
+                                      (first field-map)))
                              conj (:name field-map)))))
 
 (defn opcode
