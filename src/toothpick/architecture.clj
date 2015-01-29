@@ -23,7 +23,8 @@
 
   Represents a constant field in a single opcode. While it is named via `sym', the
   value of this field cannot be set by a user and will be ignored if present in
-  a values map."  {:deprecated true}
+  a values map."
+  {:deprecated true}
   [sym width const])
 
 (defvariant unsigned-param-field
