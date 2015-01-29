@@ -1,17 +1,14 @@
 (ns toothpick.isa.batbridge
   (:require [toothpick.architecture :refer :all]))
 
-
 (defn register? [x]
   (and (number? x)
        (< x 32)
        (>= x 0)))
 
-
 (defn literal? [i]
   (and (< i 1024)
        (>= i -1024)))
-
 
 ; Registers
 ;-------------------------------------------------------------------------------
@@ -29,7 +26,6 @@
 ;;   - when read produces the 11 bit immediate field in the instruction
 ;;   - writing to it prints its value on the console (HEX)
 (def r_IMM 29)
-
 
 (def register-symbol-map
   (-> (reduce (fn [m v]
