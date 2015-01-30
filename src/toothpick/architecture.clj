@@ -1,18 +1,34 @@
 (ns toothpick.architecture
   (:require [toothpick.core :refer [bit-fmt bit-mask-n]]
-            [detritus.variants :refer [defvariant]]))
+            [detritus.variants :refer [deftag]]
+            [detritus.update :refer [take-when]]))
 
 (defn update-in-only-when [map path pred f & args]
   (if (pred map)
     (apply update-in map path f args)
     map))
 
-(defmacro define-architecture [name & forms]
-  `(def ~name (-> {} ~@forms)))
+(defmacro define-architecture [name
+                               word-size
+                               pointer-interval
+                               & forms]
+  {:pre [(integer? word-size)
+         (integer? pointer-interval)]}
+  `(def ~name (-> {:icodes           {}
+                   :word-size        ~word-size         ;; units of bits
+                   :pointer-interval ~pointer-interval} ;; units of words
+                  ~@forms)))
+
+(defn instr-size [isa [op & tail :as opcode]]
+  (let [pointer-interval (:pointer-interval isa)
+        word-size        (:word-size isa)
+        instr            (get-in isa [:icodes op])
+        instr-width      (:width instr)]
+    (/ instr-width word-size pointer-interval)))
 
 ;; subsystem for constructing icode descriptors
 ;;------------------------------------------------------------------------------
-(defvariant const-field
+(deftag const-field
   "Represents a constant field in a single opcode. While it is named via `sym',
   the value of this field cannot be set by a user and will be ignored if present
   in a values map."
@@ -21,7 +37,7 @@
          (integer? width)
          (number? const)]})
 
-(defvariant enforced-const-field
+(deftag enforced-const-field
   "DEPRECATED, use const-field instead.
 
   Represents a constant field in a single opcode. While it is named via `name', the
@@ -33,7 +49,7 @@
          (integer? width)
          (number? const)]})
 
-(defvariant unsigned-param-field
+(deftag unsigned-param-field
   "Represents an unsigned parameter field in a single opcode. The `name' of the
   parameter will be used to extract a value from the arguments map when bit
   encoding this parameter.
@@ -45,7 +61,7 @@
          (integer? width)
          (instance? clojure.lang.IFn pred)]})
 
-(defvariant signed-param-field
+(deftag signed-param-field
   "Represents a signed parameter field in a single opcode. The `name' of the
   parameter will be used to extract a value from the arguments map when bit
   encoding this parameter.
@@ -99,7 +115,7 @@
     (-> icode
         (update-in [:width]  n+ (:width body))
         (update-in [:fields] conj field)
-        (cond-> (#{::signed-param-field ::unsigned-param-field} tag)
+        (cond-> (field-param? field)
           (update-in [:params] conj (:name body))))))
 
 (defn opcode

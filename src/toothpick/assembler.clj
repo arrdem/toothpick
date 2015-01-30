@@ -1,7 +1,7 @@
 (ns toothpick.assembler
   (:require [clojure.core.match :refer [match]]
             [toothpick.core :refer [bit-mask-n]]
-            [toothpick.architecture :refer [icode-field?] :as a]))
+            [toothpick.architecture :refer [icode-field? instr-size] :as a]))
 
 ;; Subsystem for using ISA descriptors to assemble instruction descriptor
 ;; structures into bytes usable by a bytecode machine.
@@ -62,14 +62,11 @@
 (defn label?
   "Predicate indicating whether an opcode represents a label. Returns the
   label's name or false."
+
   [form]
   (match [form]
          [[:label x]] x
          :else false))
-
-;; FIXME: Not a constant! Depends on the ISA
-(defn byte-count [isa form]
-  4)
 
 (defn compute-labels
   "Walks a seq of forms given an ISA and a starting address, computing the
@@ -86,7 +83,7 @@
              (rest forms))
       (if-not (empty? (rest forms))
         (recur label-addr-map
-               (+ address (byte-count isa head))
+               (+ address (instr-size isa head))
                (rest forms))
         label-addr-map))))
 

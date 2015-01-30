@@ -55,7 +55,7 @@
 ;; i : immediate signed quantity
 ;; _ : value is not read. Set to 0 when assembled.
 
-(define-architecture batbridge
+(define-architecture batbridge 32 1
   ;; HLT 0x00 000000 _____ _____ _____ ___________
   ;; halts the machine immediately
   (opcode :hlt
