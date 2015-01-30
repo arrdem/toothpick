@@ -16,41 +16,66 @@
   "Represents a constant field in a single opcode. While it is named via `sym',
   the value of this field cannot be set by a user and will be ignored if present
   in a values map."
-  [sym width const])
+  [name width const]
+  {:pre [(keyword? name)
+         (integer? width)
+         (number? const)]})
 
 (defvariant enforced-const-field
   "DEPRECATED, use const-field instead.
 
-  Represents a constant field in a single opcode. While it is named via `sym', the
+  Represents a constant field in a single opcode. While it is named via `name', the
   value of this field cannot be set by a user and will be ignored if present in
   a values map."
   {:deprecated true}
-  [sym width const])
+  [name width const]
+  {:pre [(keyword? name)
+         (integer? width)
+         (number? const)]})
 
 (defvariant unsigned-param-field
-  "Represents an unsigned parameter field in a single opcode. The `sym' of the
+  "Represents an unsigned parameter field in a single opcode. The `name' of the
   parameter will be used to extract a value from the arguments map when bit
   encoding this parameter.
 
   The value must satisfy `pred' (which should check for truncation and soforth)
   in order for encoding to succeed."
-  [sym width pred])
+  [name width pred]
+  {:pre [(keyword? name)
+         (integer? width)
+         (instance? clojure.lang.IFn pred)]})
 
 (defvariant signed-param-field
-  "Represents a signed parameter field in a single opcode. The `sym' of the
+  "Represents a signed parameter field in a single opcode. The `name' of the
   parameter will be used to extract a value from the arguments map when bit
   encoding this parameter.
 
   The value must satisfy `pred' (which should check for truncation and soforth)
   in order for encoding to succeed."
-  [sym width pred])
+  [name width pred]
+  {:pre [(keyword? name)
+         (integer? width)
+         (instance? clojure.lang.IFn pred)]})
 
-(defn icode-field? [x]
+(defn icode-field?
+  "Predicate indicating whether the given value is any kind of icode field
+  tagged value."
+  [x]
   (and (vector? x)
        (#{::signed-param-field
           ::unsigned-param-field
           ::const-field
           ::enforced-const-field}
+        (first x))))
+
+;; FIXME: naming is le hard
+(defn field-param?
+  "Predicate indicating whether the given value is a tagged value representing
+  an icode field which requires a user supplied parameter."
+  [x]
+  (and (vector? x)
+       (#{::signed-param-field
+          ::unsigned-param-field}
         (first x))))
 
 (def n+
