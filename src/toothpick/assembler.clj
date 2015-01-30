@@ -3,7 +3,6 @@
             [toothpick.core :refer [bit-mask-n]]
             [toothpick.architecture :refer [icode-field?] :as a]))
 
-
 ;; Subsystem for using ISA descriptors to assemble instruction descriptor
 ;; structures into bytes usable by a bytecode machine.
 ;; ------------------------------------------------------------------------------
