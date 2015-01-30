@@ -62,17 +62,20 @@
   a width, an optional test predicate and an optional value. Bit fields are
   packed atop previously installed fields."
 
-  [icode field-map]
-  (let [field-map (assoc field-map :offset 
-                         (->> icode
-                              :fields
-                              (map :width)
-                              (reduce +)))]
+  [icode field]
+  {:pre [(icode-field? field)]}
+  (let [[tag body] field
+        body       (assoc body :offset
+                          (->> icode
+                               :fields
+                               (map (comp :width second))
+                               (reduce +)))
+        field      [tag body]]
     (-> icode
-        (update-in [:width]  n+ (:width field-map))
-        (update-in [:fields] conj field-map)
-        (update-in-only-when [:params] icode-field?
-                             conj (:name field-map)))))
+        (update-in [:width]  n+ (:width body))
+        (update-in [:fields] conj field)
+        (cond-> (#{::signed-param-field ::unsigned-param-field} tag)
+          (update-in [:params] conj (:name body))))))
 
 (defn opcode
   "Creates an opcode representation by composing several parameter field
@@ -83,6 +86,6 @@
   updated ISA."
 
   [isa sym & fields]
-  (let [fields (reverse fields)
+  (let [fields      (reverse fields)
         opcode-repr (reduce add-field {} fields)]
     (assoc-in isa [:icodes (keyword (name sym))] opcode-repr)))
