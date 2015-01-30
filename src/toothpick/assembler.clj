@@ -136,7 +136,6 @@
           (map #(resolve-params label-map %2 %1) v (drop start (range)))
           (map #(list->bytecode isa %1) v))))
 
-
 (defn generate-mif [isa word-width mem-width forms]
   (let [bytecode (assemble isa forms)
         words    (/ mem-width word-width)
