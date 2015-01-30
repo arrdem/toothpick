@@ -120,7 +120,6 @@
         more (rest icode)]
     (cons op (map #(resolve-param label-map pc %1) more))))
 
-
 (defn assemble
   "Compiles a series of assembler directives into a useable bytecode,
   computing relative jumps and absolute instruction positions naively.
