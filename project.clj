@@ -1,4 +1,4 @@
-(defproject me.arrdem/toothpick "0.2.0"
+(defproject me.arrdem/toothpick "0.2.1"
   :description "An assembler definition toolkit for Clojure"
   :url "https://www.github.com/arrdem/toothpick"
   :license {:name "Eclipse Public License"
