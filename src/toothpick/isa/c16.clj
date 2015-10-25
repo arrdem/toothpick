@@ -16,29 +16,29 @@
 
 (defmacro fmt-a [carry name op f]
   `(opcode ~carry ~name
-           (const-field     :icode 4 ~op)
-           (const-field     :f     1 ~f)
-           (parameter-field :d     3 register?)
-           (parameter-field :a     3 register?)
-           (const-field     :_     2 0)
-           (parameter-field :b     3 register?)
+           (->const-field     :icode 4 ~op)
+           (->const-field     :f     1 ~f)
+           (->parameter-field :d     3 register?)
+           (->parameter-field :a     3 register?)
+           (->const-field     :_     2 0)
+           (->parameter-field :b     3 register?)
            ))
 
 (defmacro fmt-b [carry name op f]
   `(opcode ~carry ~name
-           (const-field     :icode 4 ~op)
-           (const-field     :f     1 ~f)
-           (parameter-field :d     3 register?)
-           (parameter-field :a     3 register?)
-           (parameter-field :i     5 imm5?)
+           (->const-field     :icode 4 ~op)
+           (->const-field     :f     1 ~f)
+           (->parameter-field :d     3 register?)
+           (->parameter-field :a     3 register?)
+           (->parameter-field :i     5 imm5?)
            ))
 
 (defmacro fmt-c [carry name op f]
   `(opcode ~carry ~name
-           (const-field     :icode 4 ~op)
-           (const-field     :f     1 ~f)
-           (parameter-field :d     3 register?)
-           (parameter-field :i     8 imm8?)
+           (->const-field     :icode 4 ~op)
+           (->const-field     :f     1 ~f)
+           (->parameter-field :d     3 register?)
+           (->parameter-field :i     8 imm8?)
            ))
 
 (define-architecture c16
