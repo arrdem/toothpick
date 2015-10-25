@@ -1,6 +1,6 @@
 (ns toothpick.architecture
   (:require [toothpick.core :refer [bit-fmt bit-mask-n]]
-            [detritus.variants :refer [deftag]]
+            [guten-tag.core :refer [deftag]]
             [detritus.update :refer [take-when]]))
 
 (defn update-in-only-when [map path pred f & args]
@@ -77,22 +77,18 @@
   "Predicate indicating whether the given value is any kind of icode field
   tagged value."
   [x]
-  (and (vector? x)
-       (#{::signed-param-field
-          ::unsigned-param-field
-          ::const-field
-          ::enforced-const-field}
-        (first x))))
+  (or (signed-param-field? x)
+      (unsigned-param-field? x)
+      (const-field? x)
+      (enforced-const-field? x)))
 
 ;; FIXME: naming is le hard
 (defn field-param?
   "Predicate indicating whether the given value is a tagged value representing
   an icode field which requires a user supplied parameter."
   [x]
-  (and (vector? x)
-       (#{::signed-param-field
-          ::unsigned-param-field}
-        (first x))))
+  (or (unsigned-param-field? x)
+      (signed-param-field? x)))
 
 (def n+
   "A wrapper around + which treats nil as having a value of 0."
@@ -105,18 +101,14 @@
 
   [icode field]
   {:pre [(icode-field? field)]}
-  (let [[tag body] field
-        body       (assoc body :offset
-                          (->> icode
-                               :fields
-                               (map (comp :width second))
-                               (reduce +)))
-        field      [tag body]]
+  (let [field-offset (:width icode 0)
+        field-width  (:width field)
+        field        (assoc field :offset field-offset)]
     (-> icode
-        (update-in [:width]  n+ (:width body))
+        (update-in [:width]  n+ field-width)
         (update-in [:fields] conj field)
         (cond-> (field-param? field)
-          (update-in [:params] conj (:name body))))))
+          (update-in [:params] conj (:name field))))))
 
 (defn opcode
   "Creates an opcode representation by composing several parameter field
