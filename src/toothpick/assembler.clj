@@ -1,6 +1,7 @@
 (ns toothpick.assembler
-  (:require [toothpick.core :refer [bit-mask-n]]))
-
+  (:require [clojure.core.match :refer [match]]
+            [toothpick.core :refer [bit-mask-n]]
+            [toothpick.architecture :refer [icode-field? instr-size] :as a]))
 
 ;; Subsystem for using ISA descriptors to assemble instruction descriptor
 ;; structures into bytes usable by a bytecode machine.
@@ -9,28 +10,25 @@
   "Encodes an instruction field, using the field descriptor map and a map of
   parameter names to values. Returns an integer representing the encoded field."
 
-  [icode field val-map]
-  (case (:type field)
-    ;; case for encoding a constant field... Note that this does _not_
-    ;; make an effort to get a parameter from the parameters map,
-    ;; because its a constant!
-    (:const :enforced-const)
-      (bit-shift-left
-       (bit-and (bit-mask-n (:width field))
-                (:value field))
-       (:offset field))
+  [icode [tag {:keys [width offset const name pred] :as body} :as field] val-map]
+  {:pre [(icode-field? field)
+         (integer? width)
+         (integer? offset)
+         (> width 0)
+         (or (number? const)
+             (and name pred))]}
+  (bit-shift-left
+   (bit-and (bit-mask-n width)
+            (case tag
+              (::a/const-field)
+              ,,const
 
-    ;; Because this case is a parameter that has to be encoded in, a
-    ;; parameter is fetched from the params map.
-    (:unsigned-field :field :signed-field)
-      (let [val (get val-map (:name field) 0)]
-        (assert ((:pred field) val)
-                (format "Failed to encode parameter %s" (name (:name field))))
-        (bit-shift-left
-         (bit-and (bit-mask-n (:width field))
-                  val)
-         (:offset field)))))
-
+              (::a/unsigned-param-field ::a/signed-param-field)
+              ,,(let [val (get val-map name)]
+                  (assert val        (str "No value for parameter " name))
+                  (assert (pred val) (str "Predicate failure on parameter " name))
+                  val)))
+   offset))
 
 (defn map->bytecode
   "Compiles an instruction parameter map which the assembler would
@@ -38,16 +36,12 @@
   parameter values."
 
   [isa opcode val-map]
-  (let [icode (get (:icodes isa) opcode)]
-    (assert icode 
-            (format "Could not get an icode for name %s" opcode))
-    (let [fields (:fields icode)]
-      (assert fields 
-              (format "Could not get icode fields for icode %s"
-                             (:name icode)))
-      (let [encoding (mapv #(encode-field icode %1 val-map) fields)]
-        (reduce bit-or 0 encoding)))))
-
+  (let [icode  (get (:icodes isa) opcode)
+        fields (:fields icode)]
+    (assert icode (format "Could not get an icode for name " opcode))
+    (assert fields (str "Could not get icode fields for icode " opcode))
+    (let [encoding (mapv #(encode-field icode %1 val-map) fields)]
+      (reduce bit-or 0 encoding))))
 
 (defn list->bytecode
   "Compiles a list that a programmer could actually type or generate
@@ -55,77 +49,73 @@
 
   [isa [name & tail]]
   (let [opcode (get-in isa [:icodes name])]
-    (assert opcode (format "Failed to find opcode in isa: %s" opcode))
+    (assert opcode (format "Failed to find opcode in isa: %s" name))
     (let [{:keys [fields params] :as icode} opcode
-          val-map (zipmap params tail)]
+          val-map                           (zipmap params tail)]
+      (assert (= (count params) (count tail))
+              (str "Could not encode op, " name ", missmatched param counts!"))
       (map->bytecode isa name val-map))))
 
 
 ;; Define a prototype assembler.
 ;;------------------------------------------------------------------------------
-(defn label? [form]
-  (or (and (list? form)
-           (= (first form) :label)
-           (keyword? (second form)))
-      (keyword? form)))
-
-
-(defn label-symbol 
+(defn label?
+  "Predicate indicating whether an opcode represents a label. Returns the
+  label's name or false."
 
   [form]
-  (when (label? form)
-    (cond (list? form)
-            (second form)
-          (keyword? form)
-            form)))
+  (match [form]
+         [[:label x]] x
+         :else false))
 
+(defn compute-labels
+  "Walks a seq of forms given an ISA and a starting address, computing the
+  location of labels in the given program and returning a mapping from labels to
+  their addresses in the program."
 
-(defn byte-count [form]
-  4)
-
-
-(defn compute-labels 
-  
-  [start forms]
-  (loop [label-addr-map {}
-         address start
-         forms forms]
-    (let [head (first forms)]
-      (if (label? head)
-        (recur (assoc label-addr-map (label-symbol head) address)
-               address
+  [isa start forms]
+  (loop [label-addr-map   {}
+         address          start
+         [head :as forms] forms]
+    (if-let [target (label? head)]
+      (recur (assoc label-addr-map target address)
+             address
+             (rest forms))
+      (if-not (empty? (rest forms))
+        (recur label-addr-map
+               (+ address (instr-size isa head))
                (rest forms))
-        (if-not (empty? (rest forms))
-          (recur label-addr-map
-                 (+ address (byte-count head))
-                 (rest forms))
-          label-addr-map)))))
+        label-addr-map))))
 
-
+;; FIXME: do I need the ISA here?
 (defn resolve-param
   "Assumes that all explicit parameters are integers and that keywords are
   labels. Looks up keywords in the argument translation table and returns either
   the translation or the existing parameter. Assertion fails if the keyword is
   not found."
 
-  [label-map param]
+  [label-map pc param]
   (if (label? param)
-    (do (assert (contains? label-map param) 
-                (format "Label %s undefined!" param))
-        (get label-map (label-symbol param)))
+    (let [label (if (keyword? param)
+                  param
+                  (second param))]
+      (assert (contains? label-map label)
+              (format "Label %s undefined!" param))
+      (if (= :relative (first param))
+        (- (get label-map label) pc)
+        (get label-map label)))
     param))
 
-
-(defn resolve-params 
+;; FIXME: do I need the ISA here?
+(defn resolve-params
   "Resolves the parameters of an opcode, being the _tail_ of the opcode. The
   head element is ignored and assumed to be an instruction keyword. Returns a
   new sequence representing the resolved opcode."
 
-  [label-map icode]
+  [label-map pc icode]
   (let [op (first icode)
         more (rest icode)]
-    (cons op (map #(resolve-param label-map %1) more))))
-
+    (cons op (map #(resolve-param label-map pc %1) more))))
 
 (defn assemble
   "Compiles a series of assembler directives into a useable bytecode,
@@ -137,8 +127,31 @@
   [isa forms & {:keys [start]
                 :as   options
                 :or   {start 0}}]
-  (let [label-map (compute-labels start forms)]
+  (let [label-map (compute-labels isa start forms)]
     (as-> forms v
           (remove label? v)
-          (map #(resolve-params label-map %1) v)
+          (map #(resolve-params label-map %2 %1) v (drop start (range)))
           (map #(list->bytecode isa %1) v))))
+
+(defn generate-mif [isa word-width mem-width forms]
+  (let [bytecode (assemble isa forms)
+        words    (/ mem-width word-width)
+        segments (partition words words (repeat words 0) bytecode)
+        pattern  (let [bytes    (/ word-width 4)
+                       x-substr (str "%0" bytes "x")]
+                   (str (apply str "%d: " (repeat words x-substr)) ";\n"))
+        template (str "DEPTH = %d;\n"
+                      "WIDTH = %d;\n"
+                      "ADDRESS_RADIX = DEC;\n"
+                      "DATA_RADIX = HEX;\n"
+                      "CONTENT\nBEGIN\n%sEND;")]
+    (->> segments
+         (map vector (range))
+         (map (fn [[x args]]
+                (->> args
+                     (map #(or %1 0))
+                     (apply format pattern x))))
+         (apply str)
+         (format template
+                 (inc (count segments))
+                 mem-width))))

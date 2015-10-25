@@ -1,73 +1,122 @@
 (ns toothpick.architecture
-  (:require [toothpick.core :refer [bit-fmt bit-mask-n]]))
-
+  (:require [toothpick.core :refer [bit-fmt bit-mask-n]]
+            [detritus.variants :refer [deftag]]
+            [detritus.update :refer [take-when]]))
 
 (defn update-in-only-when [map path pred f & args]
   (if (pred map)
     (apply update-in map path f args)
     map))
 
+(defmacro define-architecture [name
+                               word-size
+                               pointer-interval
+                               & forms]
+  {:pre [(integer? word-size)
+         (integer? pointer-interval)]}
+  `(def ~name (-> {:icodes           {}
+                   :word-size        ~word-size         ;; units of bits
+                   :pointer-interval ~pointer-interval} ;; units of words
+                  ~@forms)))
 
-(defmacro define-architecture [name & forms]
-  `(def ~name (-> {} ~@forms)))
-
+(defn instr-size [isa [op & tail :as opcode]]
+  (let [pointer-interval (:pointer-interval isa)
+        word-size        (:word-size isa)
+        instr            (get-in isa [:icodes op])
+        instr-width      (:width instr)]
+    (/ instr-width word-size pointer-interval)))
 
 ;; subsystem for constructing icode descriptors
 ;;------------------------------------------------------------------------------
-(defn const-field [sym width const]
-  {:name  sym
-   :type  :const
-   :width width
-   :value const})
+(deftag const-field
+  "Represents a constant field in a single opcode. While it is named via `sym',
+  the value of this field cannot be set by a user and will be ignored if present
+  in a values map."
+  [name width const]
+  {:pre [(keyword? name)
+         (integer? width)
+         (number? const)]})
 
-(defn enforced-const-field [sym width const]
-  {:name  sym
-   :type  :enforced-const
-   :width width
-   :value const})
+(deftag enforced-const-field
+  "DEPRECATED, use const-field instead.
 
-(defn parameter-field [sym width pred]
-  {:name  sym
-   :type  :unsigned-field
-   :width width
-   :pred  pred})
+  Represents a constant field in a single opcode. While it is named via `name', the
+  value of this field cannot be set by a user and will be ignored if present in
+  a values map."
+  {:deprecated true}
+  [name width const]
+  {:pre [(keyword? name)
+         (integer? width)
+         (number? const)]})
 
+(deftag unsigned-param-field
+  "Represents an unsigned parameter field in a single opcode. The `name' of the
+  parameter will be used to extract a value from the arguments map when bit
+  encoding this parameter.
 
-(defn signed-parameter-field [sym width pred]
-  {:name  sym
-   :type  :signed-field
-   :width width
-   :pred  pred})
+  The value must satisfy `pred' (which should check for truncation and soforth)
+  in order for encoding to succeed."
+  [name width pred]
+  {:pre [(keyword? name)
+         (integer? width)
+         (instance? clojure.lang.IFn pred)]})
 
+(deftag signed-param-field
+  "Represents a signed parameter field in a single opcode. The `name' of the
+  parameter will be used to extract a value from the arguments map when bit
+  encoding this parameter.
 
-(defn n+
+  The value must satisfy `pred' (which should check for truncation and soforth)
+  in order for encoding to succeed."
+  [name width pred]
+  {:pre [(keyword? name)
+         (integer? width)
+         (instance? clojure.lang.IFn pred)]})
+
+(defn icode-field?
+  "Predicate indicating whether the given value is any kind of icode field
+  tagged value."
+  [x]
+  (and (vector? x)
+       (#{::signed-param-field
+          ::unsigned-param-field
+          ::const-field
+          ::enforced-const-field}
+        (first x))))
+
+;; FIXME: naming is le hard
+(defn field-param?
+  "Predicate indicating whether the given value is a tagged value representing
+  an icode field which requires a user supplied parameter."
+  [x]
+  (and (vector? x)
+       (#{::signed-param-field
+          ::unsigned-param-field}
+        (first x))))
+
+(def n+
   "A wrapper around + which treats nil as having a value of 0."
-
-  [& more]
-  (reduce +
-          (map #(or %1 0)
-               more)))
-
+  (fnil + 0))
 
 (defn add-field 
   "Adds a bit field to an opcode. Bit fields are specified with a name, a type,
   a width, an optional test predicate and an optional value. Bit fields are
   packed atop previously installed fields."
 
-  [icode field-map]
-  (let [field-map (assoc field-map :offset 
-                         (->> icode
-                              :fields
-                              (map :width)
-                              (reduce +)))]
+  [icode field]
+  {:pre [(icode-field? field)]}
+  (let [[tag body] field
+        body       (assoc body :offset
+                          (->> icode
+                               :fields
+                               (map (comp :width second))
+                               (reduce +)))
+        field      [tag body]]
     (-> icode
-        (update-in [:width]  n+ (:width field-map))
-        (update-in [:fields] conj field-map)
-        (update-in-only-when [:params] 
-                             (fn [_] (#{:signed-field :unsigned-field :enforced-const}
-                                     (:type field-map)))
-                             conj (:name field-map)))))
-
+        (update-in [:width]  n+ (:width body))
+        (update-in [:fields] conj field)
+        (cond-> (field-param? field)
+          (update-in [:params] conj (:name body))))))
 
 (defn opcode
   "Creates an opcode representation by composing several parameter field
@@ -78,6 +127,6 @@
   updated ISA."
 
   [isa sym & fields]
-  (let [fields (reverse fields)
+  (let [fields      (reverse fields)
         opcode-repr (reduce add-field {} fields)]
     (assoc-in isa [:icodes (keyword (name sym))] opcode-repr)))
